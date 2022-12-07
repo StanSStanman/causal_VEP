@@ -57,7 +57,7 @@ if __name__ == '__main__':
                                            src_fname,
                                            ses, 'outcome', atlas='aparc.vep',
                                            fmin=88., fmax=92.,
-                                           tmin=0., tmax=.21,
+                                           tmin=-.8, tmax=1.5,
                                            bandwidth=None, win_length=0.2,
                                            tstep=0.005, norm='mean',
                                            return_unlabeled=False, n_jobs=-1)
