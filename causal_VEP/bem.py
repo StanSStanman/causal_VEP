@@ -6,7 +6,8 @@ from causal_VEP.config.config import read_db_coords
 
 
 def compute_bem(subject, sbj_dir, bem_fname):
-    bem_model = mne.make_bem_model(subject=subject, subjects_dir=sbj_dir)
+    bem_model = mne.make_bem_model(subject=subject, subjects_dir=sbj_dir,
+                                   conductivity=[0.3])
     bem_solution = mne.make_bem_solution(bem_model)
     mne.write_bem_solution(bem_fname, bem_solution, overwrite=True)
 
