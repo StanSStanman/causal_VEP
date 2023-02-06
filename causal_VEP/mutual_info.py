@@ -95,7 +95,7 @@ def create_dataset(subjects, sessions, regressor, condition=None, norm=None,
                             allow_pickle=True)
                 bad_t = d['ar']
 
-                if bad_t != []:
+                if len(bad_t) != 0:
                     reg = np.delete(reg, bad_t)
                     if condition is not None:
                         con = np.delete(con, bad_t)
@@ -164,7 +164,7 @@ def model_based_analysis(subjects, sessions, regressors, conditions, mi_types,
         # Defining a frites workflow
         workflow = frites.workflow.WfMi(mi_type=mit, inference=inference)
         # Fitting
-        gcmi, pvals = workflow.fit(dataset, n_perm=1000, rfx_center=False,
+        gcmi, pvals = workflow.fit(dataset, n_perm=200, rfx_center=False,
                                    rfx_sigma=0.001, n_jobs=-1)
         # Getting t-values
         tvals = workflow.get_params("tvalues")
