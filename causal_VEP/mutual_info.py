@@ -7,7 +7,8 @@ import frites
 from frites.dataset import DatasetEphy
 from meg_analysis.utils import valid_name
 from causal_VEP.config.config import read_db_coords
-from causal_VEP.utils import (reject_hga_trials, xr_conv, z_score)
+from causal_VEP.utils import (reject_hga_trials, xr_conv,
+                              z_score, relchange, lognorm)
 from causal_VEP.directories import *
 
 
@@ -75,11 +76,14 @@ def create_dataset(subjects, sessions, regressor, condition=None, norm=None,
                     ephy = ephy.loc[{'roi': ephy.roi[rois[0]:rois[1]]}]
 
             if norm is not None:
-                # TODO just 1 method available, add at least 2 more
                 assert isinstance(norm, str), \
                     TypeError('norm shoud be None or a string type')
                 if norm == 'zscore':
                     ephy = z_score(ephy)
+                elif norm == 'relchange':
+                    ephy = relchange(ephy)
+                elif norm == 'lognorm':
+                    ephy = lognorm(ephy)
 
             # Collecting behavioral data
             df = xls['Team {0}'.format(ses)]
@@ -110,11 +114,17 @@ def create_dataset(subjects, sessions, regressor, condition=None, norm=None,
                 scores = np.delete(scores, bt_hga)
 
             # Smoothing data
-            # TODO add other windowing methods
             if smoothing is not None:
                 for smk in smoothing.keys():
                     if smk == 'blackman':
                         ephy = xr_conv(ephy, np.blackman(smoothing[smk]))
+                    elif smk == 'barlett':
+                        ephy = xr_conv(ephy, np.barlett(smoothing[smk]))
+                    elif smk == 'hamming':
+                        ephy = xr_conv(ephy, np.hamming(smoothing[smk]))
+                    elif smk == 'hanning':
+                        ephy = xr_conv(ephy, np.hanning(smoothing[smk]))
+
 
             # Filling sublists with data
             _ephy.append(ephy)
@@ -164,8 +174,10 @@ def model_based_analysis(subjects, sessions, regressors, conditions, mi_types,
         # Defining a frites workflow
         workflow = frites.workflow.WfMi(mi_type=mit, inference=inference)
         # Fitting
-        gcmi, pvals = workflow.fit(dataset, n_perm=200, rfx_center=False,
-                                   rfx_sigma=0.001, n_jobs=-1)
+        # gcmi, pvals = workflow.fit(dataset, n_perm=1000, rfx_center=False,
+        #                            rfx_sigma=0.001, n_jobs=-1)
+        gcmi, pvals = workflow.fit(dataset, n_perm=1000, n_jobs=-1)
+
         # Getting t-values
         tvals = workflow.get_params("tvalues")
 
@@ -219,18 +231,23 @@ def model_based_analysis(subjects, sessions, regressors, conditions, mi_types,
 
 if __name__ == '__main__':
     # Electrophysiology dataset definition
-    subjects = ['subject_02', 'subject_04', 'subject_05',
+    # subjects = ['subject_02', 'subject_04', 'subject_05',
+    #             'subject_06', 'subject_07', 'subject_08', 'subject_09',
+    #             'subject_10', 'subject_11', 'subject_13', 'subject_14',
+    #             'subject_16', 'subject_17', 'subject_18']
+
+    subjects = ['subject_01', 'subject_02', 'subject_04', 'subject_05',
                 'subject_06', 'subject_07', 'subject_08', 'subject_09',
                 'subject_10', 'subject_11', 'subject_13', 'subject_14',
-                'subject_16', 'subject_17', 'subject_18']
+                'subject_15', 'subject_16', 'subject_17', 'subject_18']
 
     sessions = range(1, 16)
 
     norm = 'zscore'
 
-    crop = (-.5, 1.3)
+    crop = (-.6, 1.3)
 
-    smooth = {'blackman': 40}
+    smooth = {'blackman': 30}
 
     rois = (0, -2)
 
@@ -244,6 +261,9 @@ if __name__ == '__main__':
               'S', 'BS',
               'dp_meta_post', 'conf_meta_post', 'info_bias_post', 'marg_surp',
               'empowerment']
+
+    # cd_reg = ['Team', 'Team_dp']
+    # cc_reg = ['Ideal_dp', 'KL_post', 'dP_post', 'log_dP_post', 'S', 'BS']
 
     regressors = cd_reg + cc_reg
 

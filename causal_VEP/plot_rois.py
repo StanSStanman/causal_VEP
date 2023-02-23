@@ -1,8 +1,5 @@
-import pickle
-
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-import mpl_toolkits as mplt
 import os.path as op
 import numpy as np
 import xarray as xr
@@ -55,12 +52,18 @@ def plot_vep(data, pvals=None, threshold=.05, time=None, contrast=.05,
     else:
         ValueError('data should be in xarray.DataArray format.')
 
+    if data.dims == ('times', 'roi'):
+        data = data.transpose('roi', 'times')
+
     # check if pvalues is None or a 2D DataArray with the correct dims
     if isinstance(pvals, xr.DataArray):
         pval_dims = pvals.coords._names
         assert ('roi' in pval_dims and 'times' in pval_dims), AssertionError(
             "DataArray must contain two dimensions with dims names "
             "'roi' and 'times'.")
+        if pvals.dims == ('times', 'roi'):
+            pvals = pvals.transpose('roi', 'times')
+
     else:
         assert pvals is None, ValueError('pvalues can be of type None or '
                                          'xarray.DataArray')
@@ -139,7 +142,7 @@ def plot_vep(data, pvals=None, threshold=.05, time=None, contrast=.05,
     # picking data on p-values threshold
     if pvals is not None:
         pvals = pvals.fillna(1.)
-        xr.where(pvals >= threshold, np.nan, data)
+        data = xr.where(pvals >= threshold, np.nan, data)
 
     # get colorbar limits
     if isinstance(contrast, float):
@@ -214,7 +217,6 @@ def plot_vep(data, pvals=None, threshold=.05, time=None, contrast=.05,
             plt.tight_layout()
 
         elif mode == 'double' or mode == 'bordel':
-            _data['roi'] = _lh
             ss.heatmap(_data.to_pandas(), yticklabels=True, xticklabels=False,
                        vmin=vmin.values, vmax=vmax.values, cmap=cmap, ax=lh,
                        cbar=False, zorder=0)
@@ -308,10 +310,17 @@ def order_vep_labels(labels):
 
 
 if __name__ == '__main__':
-    subjects = ['subject_02', 'subject_04', 'subject_05',
+    from utils import z_score, relchange, lognorm, xr_conv
+    # subjects = ['subject_02', 'subject_04', 'subject_05',
+    #             'subject_06', 'subject_07', 'subject_08', 'subject_09',
+    #             'subject_10', 'subject_11', 'subject_13', 'subject_14',
+    #             'subject_16', 'subject_17', 'subject_18']
+
+    subjects = ['subject_01', 'subject_02', 'subject_04', 'subject_05',
                 'subject_06', 'subject_07', 'subject_08', 'subject_09',
                 'subject_10', 'subject_11', 'subject_13', 'subject_14',
-                'subject_16', 'subject_17', 'subject_18']
+                'subject_15', 'subject_16', 'subject_17', 'subject_18']
+
     sessions = range(1, 16)
 
     fname = '/media/jerry/data_drive/data/db_mne/meg_causal/' \
@@ -322,8 +331,8 @@ if __name__ == '__main__':
         for ses in sessions:
             data = xr.load_dataarray(fname.format(sbj, ses))
             data = data.drop_sel({'roi': ['Unknown-lh', 'Unknown-rh']})
-            data.data -= data.data.mean(-1, keepdims=True)
-            data.data /= data.data.std(-1, keepdims=True)
+            data = z_score(data)
+            data = xr_conv(data, np.blackman(20))
             data = data.mean('trials')
             if n == 0:
                 datas = data.data
@@ -334,8 +343,32 @@ if __name__ == '__main__':
     datas /= n
     data.data = datas
 
-    plot_vep(data, pvals=None, threshold=.05, time=(-.6, 1.2), contrast=.01,
+    plot_vep(data, pvals=None, threshold=.05, time=None, contrast=.02,
              cmap='Spectral_r', title='HGA',
              vlines={0.: dict(color='black'),
                      -.3: dict(color='black', linestyle='--')},
              brain=False)
+
+    # fname = '/media/jerry/data_drive/data/stats/meg_causal/' \
+    #         '22022023/MI_dP_post.nc'
+    # dataar = xr.load_dataset(fname)
+    # data = dataar.mi
+    # pvals = dataar.pv
+    #
+    # plot_vep(data, pvals=None, threshold=.05, time=None, contrast=.02,
+    #          cmap='viridis', title='HGA',
+    #          vlines={0.: dict(color='black'),
+    #                  -.3: dict(color='black', linestyle='--')},
+    #          brain=False)
+    #
+    # plot_vep(pvals, pvals=None, threshold=.05, time=None, contrast=.02,
+    #          cmap='gist_stern', title='HGA',
+    #          vlines={0.: dict(color='black'),
+    #                  -.3: dict(color='black', linestyle='--')},
+    #          brain=False)
+    #
+    # plot_vep(data, pvals=pvals, threshold=.05, time=None, contrast=.02,
+    #          cmap='viridis', title='HGA',
+    #          vlines={0.: dict(color='black'),
+    #                  -.3: dict(color='black', linestyle='--')},
+    #          brain=False)

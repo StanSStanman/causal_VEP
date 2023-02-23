@@ -58,6 +58,7 @@ def xr_conv(data, kernel):
 def z_score(data):
     '''
     Perform z-score on the 3rd dimension of an array
+    ( y = (x - mean(x)) / std(x) )
     :param data: np.ndarray | xr.DataArray
         Data on which perform the z-score, average e standard deviation
         are computed on the 3rd dimension
@@ -65,9 +66,46 @@ def z_score(data):
         z-scored data
     '''
     if isinstance(data, xr.DataArray):
-        data.data -= data.data.mean(-1, keepdims=True)
-        data.data /= data.data.std(-1, keepdims=True)
+        data.data = ((data.data - data.data.mean(-1, keepdims=True)) /
+                     data.data.std(-1, keepdims=True))
     elif isinstance(data, np.ndarray):
+        data = ((data - data.mean(-1, keepdims=True)) /
+                data.std(-1, keepdims=True))
+    return data
+
+
+def relchange(data):
+    '''
+    Perform the relative change normalization on the 3rd dimension of an array
+    ( y = (x - mean(x)) / mean(x) )
+    :param data: np.ndarray | xr.DataArray
+        Data on which compute the relative change, averages
+        are computed on the 3rd dimension
+    :return: np.ndarray | xr.DataArray
+        relative change of data
+    '''
+    if isinstance(data, xr.DataArray):
+        data.data = ((data.data - data.data.mean(-1, keepdims=True)) /
+                     data.data.mean(-1, keepdims=True))
+    elif isinstance(data, np.ndarray):
+        data = ((data - data.mean(-1, keepdims=True)) /
+                data.mean(-1, keepdims=True))
+    return data
+
+def lognorm(data):
+    '''
+    Perform the logarithmic normalization on the 3rd dimension of an array
+    ( y = log(x) - log(mean(x)) )
+    :param data: np.ndarray | xr.DataArray
+        Data on which compute the logarithmic normalization, average
+        is computed on the 3rd dimension
+    :return: np.ndarray | xr.DataArray
+        logarithmic normalization of data
+    '''
+    if isinstance(data, xr.DataArray):
+        data.data = np.log(data.data)
+        data.data -= data.data.mean(-1, keepdims=True)
+    elif isinstance(data, np.ndarray):
+        data = np.log(data)
         data -= data.mean(-1, keepdims=True)
-        data /= data.std(-1, keepdims=True)
     return data
