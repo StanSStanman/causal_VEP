@@ -310,65 +310,85 @@ def order_vep_labels(labels):
 
 
 if __name__ == '__main__':
-    from utils import z_score, relchange, lognorm, xr_conv
+    # from utils import z_score, relchange, lognorm, xr_conv
     # subjects = ['subject_02', 'subject_04', 'subject_05',
     #             'subject_06', 'subject_07', 'subject_08', 'subject_09',
     #             'subject_10', 'subject_11', 'subject_13', 'subject_14',
     #             'subject_16', 'subject_17', 'subject_18']
-
-    subjects = ['subject_01', 'subject_02', 'subject_04', 'subject_05',
-                'subject_06', 'subject_07', 'subject_08', 'subject_09',
-                'subject_10', 'subject_11', 'subject_13', 'subject_14',
-                'subject_15', 'subject_16', 'subject_17', 'subject_18']
-
-    sessions = range(1, 16)
-
-    fname = '/media/jerry/data_drive/data/db_mne/meg_causal/' \
-            '{0}/vep/pow/{1}/{0}-pow.nc'
-
-    datas, n = [], 0
-    for sbj in subjects:
-        for ses in sessions:
-            data = xr.load_dataarray(fname.format(sbj, ses))
-            data = data.drop_sel({'roi': ['Unknown-lh', 'Unknown-rh']})
-            data = z_score(data)
-            data = xr_conv(data, np.blackman(20))
-            data = data.mean('trials')
-            if n == 0:
-                datas = data.data
-            else:
-                datas += data.data
-            n += 1
-
-    datas /= n
-    data.data = datas
-
-    plot_vep(data, pvals=None, threshold=.05, time=None, contrast=.02,
-             cmap='Spectral_r', title='HGA',
-             vlines={0.: dict(color='black'),
-                     -.3: dict(color='black', linestyle='--')},
-             brain=False)
-
-    # fname = '/media/jerry/data_drive/data/stats/meg_causal/' \
-    #         '22022023/MI_dP_post.nc'
-    # dataar = xr.load_dataset(fname)
-    # data = dataar.mi
-    # pvals = dataar.pv
+    #
+    # # subjects = ['subject_01', 'subject_02', 'subject_04', 'subject_05',
+    # #             'subject_06', 'subject_07', 'subject_08', 'subject_09',
+    # #             'subject_10', 'subject_11', 'subject_13', 'subject_14',
+    # #             'subject_15', 'subject_16', 'subject_17', 'subject_18']
+    #
+    # sessions = range(1, 16)
+    #
+    # fname = '/media/jerry/data_drive/data/db_mne/meg_causal/' \
+    #         '{0}/vep/pow/{1}/{0}-pow.nc'
+    #
+    # datas, n = [], 0
+    # for sbj in subjects:
+    #     for ses in sessions:
+    #         data = xr.load_dataarray(fname.format(sbj, ses))
+    #         data = data.drop_sel({'roi': ['Unknown-lh', 'Unknown-rh']})
+    #         data = z_score(data)
+    #         data = xr_conv(data, np.blackman(30))
+    #         data = data.mean('trials')
+    #         if n == 0:
+    #             datas = data.data
+    #         else:
+    #             datas += data.data
+    #         n += 1
+    #
+    # datas /= n
+    # data.data = datas
     #
     # plot_vep(data, pvals=None, threshold=.05, time=None, contrast=.02,
-    #          cmap='viridis', title='HGA',
+    #          cmap='Spectral_r', title='HGA',
     #          vlines={0.: dict(color='black'),
     #                  -.3: dict(color='black', linestyle='--')},
     #          brain=False)
-    #
-    # plot_vep(pvals, pvals=None, threshold=.05, time=None, contrast=.02,
-    #          cmap='gist_stern', title='HGA',
-    #          vlines={0.: dict(color='black'),
-    #                  -.3: dict(color='black', linestyle='--')},
-    #          brain=False)
-    #
-    # plot_vep(data, pvals=pvals, threshold=.05, time=None, contrast=.02,
-    #          cmap='viridis', title='HGA',
-    #          vlines={0.: dict(color='black'),
-    #                  -.3: dict(color='black', linestyle='--')},
-    #          brain=False)
+
+    from meg_analysis.utils import valid_name
+    cd_reg = ['Team', 'Play', 'Win', 'Team_dp']
+    cc_reg = ['Ideal_dp',
+              'P(W|P)_pre', 'P(W|nP)_pre', 'P(W|P)_post', 'P(W|nP)_post',
+              'P(W|C)_pre', 'P(W|C)_post',
+              'KL_pre', 'KL_post',
+              'JS_pre', 'JS_post',
+              'dP_pre', 'log_dP_pre', 'dP_post', 'log_dP_post',
+              'S', 'BS',
+              'dp_meta_post', 'conf_meta_post', 'info_bias_post', 'marg_surp',
+              'empowerment']
+
+    cd_reg = ['Team', 'Team_dp']
+    cc_reg = ['Ideal_dp', 'KL_post', 'dP_post', 'log_dP_post', 'S', 'BS']
+
+    reg = cd_reg + cc_reg
+
+    for r in reg:
+        _r = valid_name(r)
+        fname = '/media/jerry/data_drive/data/stats/meg_causal/' \
+                '23022023/MI_{0}.nc'.format(_r)
+        dataar = xr.load_dataset(fname)
+        data = dataar.mi
+        pvals = dataar.pv
+
+        print(_r)
+        plot_vep(data, pvals=None, threshold=.05, time=None, contrast=.02,
+                 cmap='viridis', title='HGA',
+                 vlines={0.: dict(color='black'),
+                         -.3: dict(color='black', linestyle='--')},
+                 brain=False)
+
+        plot_vep(pvals, pvals=None, threshold=.05, time=None, contrast=.02,
+                 cmap='gist_stern', title='HGA',
+                 vlines={0.: dict(color='black'),
+                         -.3: dict(color='black', linestyle='--')},
+                 brain=False)
+
+        plot_vep(data, pvals=pvals, threshold=.05, time=None, contrast=.02,
+                 cmap='viridis', title='HGA',
+                 vlines={0.: dict(color='black'),
+                         -.3: dict(color='black', linestyle='--')},
+                 brain=False)
