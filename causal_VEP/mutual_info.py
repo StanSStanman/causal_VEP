@@ -400,7 +400,7 @@ if __name__ == '__main__':
 
     norm = 'zscore'
 
-    crop = (-.6, 1.3)
+    crop = (-.4, 1.)
 
     smooth = {'blackman': 30}
 

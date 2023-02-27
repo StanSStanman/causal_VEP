@@ -364,12 +364,18 @@ if __name__ == '__main__':
     cd_reg = ['Team', 'Team_dp']
     cc_reg = ['Ideal_dp', 'KL_post', 'dP_post', 'log_dP_post', 'S', 'BS']
 
+    cd_reg = ['Team', 'Team_dp']
+    cc_reg = ['Ideal_dp', 'dP_post', 'log_dP_post', 'S', 'BS', 'KL_post',
+              'P(W|P)_post', 'P(W|nP)_post', 'P(W|C)_post', 'dp_meta_post',
+              'conf_meta_post', 'info_bias_post', 'marg_surp',
+              'empowerment']
+
     reg = cd_reg + cc_reg
 
     for r in reg:
         _r = valid_name(r)
         fname = '/media/jerry/data_drive/data/stats/meg_causal/' \
-                '23022023/MI_{0}.nc'.format(_r)
+                '27022023/MI_{0}.nc'.format(_r)
         dataar = xr.load_dataset(fname)
         data = dataar.mi
         pvals = dataar.pv
