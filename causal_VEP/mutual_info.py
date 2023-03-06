@@ -5,6 +5,8 @@ import pandas as pd
 import xarray as xr
 import frites
 from frites.dataset import DatasetEphy
+from frites.estimator import (GCMIEstimator, CorrEstimator,
+                              BinMIEstimator, DcorrEstimator)
 from meg_analysis.utils import valid_name
 from meg_causal.utils import check_rejected_sessions
 from causal_VEP.config.config import read_db_coords
@@ -65,9 +67,6 @@ def create_dataset(subjects, sessions, regressor, condition=None, norm=None,
             ephy = xr.load_dataarray(op.join(db_mne, project, sbj,
                                              'vep', 'pow', str(ses),
                                              '{0}-pow.nc'.format(sbj)))
-            # Cutting data in a time window
-            if crop is not None:
-                ephy = ephy.loc[{'times': slice(crop[0], crop[1])}]
 
             # Selecting regions of interest
             if rois is not None:
@@ -76,15 +75,20 @@ def create_dataset(subjects, sessions, regressor, condition=None, norm=None,
                 elif type(rois) == tuple:
                     ephy = ephy.loc[{'roi': ephy.roi[rois[0]:rois[1]]}]
 
+            # Normalizing data
             if norm is not None:
                 assert isinstance(norm, str), \
                     TypeError('norm shoud be None or a string type')
                 if norm == 'zscore':
-                    ephy = z_score(ephy)
+                    ephy = z_score(ephy, (-.6, -.4))
                 elif norm == 'relchange':
                     ephy = relchange(ephy)
                 elif norm == 'lognorm':
                     ephy = lognorm(ephy)
+
+            # Cutting data in a time window
+            if crop is not None:
+                ephy = ephy.loc[{'times': slice(crop[0], crop[1])}]
 
             # Collecting behavioral data
             df = xls['Team {0}'.format(ses)]
@@ -323,12 +327,51 @@ def model_based_analysis(subjects, sessions, regressors, conditions, mi_types,
         else:
             raise ValueError
 
+        # # Define estimator
+        # est = CorrEstimator(method='spearman', implementation='tensor')
+        # # Defining a frites workflow
+        # workflow = frites.workflow.WfMi(mi_type=mit, inference=inference,
+        #                                 estimator=est)
+        # # Fitting
+        # gcmi, pvals = workflow.fit(dataset, n_perm=100, tail=0, n_jobs=-1)
+        ######################
+        # # Define estimator
+        # est = BinMIEstimator(mi_type=mit, n_bins=4)
+        # # Defining a frites workflow
+        # workflow = frites.workflow.WfMi(mi_type=mit, inference=inference,
+        #                                 estimator=est)
+        # # Fitting
+        # gcmi, pvals = workflow.fit(dataset, n_perm=100, n_jobs=-1)
+        ######################
+        # # Define estimator
+        # est = DcorrEstimator(implementation='dcor', verbose=None)
+        # # Defining a frites workflow
+        # workflow = frites.workflow.WfMi(mi_type=mit, inference=inference,
+        #                                 estimator=est)
+        # # Fitting
+        # gcmi, pvals = workflow.fit(dataset, n_perm=100, n_jobs=-1)
+        ######################
+        # Define estimator
+        est = GCMIEstimator(mi_type=mit, copnorm=False, gpu=False)
         # Defining a frites workflow
-        workflow = frites.workflow.WfMi(mi_type=mit, inference=inference)
+        workflow = frites.workflow.WfMi(mi_type=mit, inference=inference,
+                                        estimator=est)
         # Fitting
-        gcmi, pvals = workflow.fit(dataset, n_perm=200, rfx_center=False,
-                                   rfx_sigma=0.001, n_jobs=-1)
-        # gcmi, pvals = workflow.fit(dataset, n_perm=1000, rfx_center=True,
+        gcmi, pvals = workflow.fit(dataset, n_perm=1000, cluster_alpha=0.01,
+                                   n_jobs=-1)
+        ######################
+        # # Defining a frites workflow
+        # workflow = frites.workflow.WfMi(mi_type=mit, inference=inference)
+        # # Fitting
+        # gcmi, pvals = workflow.fit(dataset, n_perm=100, n_jobs=-1)
+        ######################
+        #workflow._copnorm = False
+        # Fitting
+        # gcmi, pvals = workflow.fit(dataset, n_perm=100, tail=0, n_jobs=-1)
+        # gcmi, pvals = workflow.fit(dataset, n_perm=100, rfx_center=False,
+        #                            cluster_alpha=0.005, rfx_sigma=0.001,
+        #                            n_jobs=-1)
+        # gcmi, pvals = workflow.fit(dataset, n_perm=100, rfx_center=True,
         #                            n_jobs=-1)
 
         # Getting t-values
@@ -362,7 +405,7 @@ def model_based_analysis(subjects, sessions, regressors, conditions, mi_types,
                 ds.to_netcdf(_fname)
                 print('...Saved to ', _fname)
 
-        # Save analysis info
+    # Save analysis info
     fname_info = _fname.replace(_f, 'info.xlsx')
     info = {'subjects': subjects,
             'sessions': sessions,
@@ -394,6 +437,18 @@ if __name__ == '__main__':
     #             'subject_10', 'subject_11', 'subject_13', 'subject_14',
     #             'subject_15', 'subject_16', 'subject_17', 'subject_18']
 
+    # subjects = ['subject_01', 'subject_02', 'subject_04',
+    #             'subject_06', 'subject_07', 'subject_08',
+    #             'subject_10', 'subject_11', 'subject_13',
+    #             'subject_14', 'subject_15', 'subject_17']
+    #
+    # subjects = ['subject_04',
+    #             'subject_06', 'subject_07', 'subject_08',
+    #             'subject_10', 'subject_11', 'subject_13',
+    #             'subject_14', 'subject_17']
+
+    # sessions = [1, 3, 5, 7, 8, 9, 11, 14, 15] #range(1, 16)
+    # sessions = [3, 11, 14]
     sessions = range(1, 16)
 
     ss_dict = check_rejected_sessions(subjects, sessions)
@@ -423,12 +478,21 @@ if __name__ == '__main__':
               'conf_meta_post', 'info_bias_post', 'marg_surp',
               'empowerment']
 
+    # cd_reg = ['Team', 'Team_dp']
+    # cc_reg = ['Ideal_dp', 'dP_post', 'log_dP_post', 'S', 'BS', 'KL_post']
+    #
+    # cd_reg = ['Team_dp']
+    # cc_reg = ['Ideal_dp']
+    # cd_reg = []
+    # cc_reg = ['Ideal_dp']
+
     regressors = cd_reg + cc_reg
 
     conditions = [None] * len(regressors)
 
     mi_types = ['cd' for mt in range(len(cd_reg))] + \
                ['cc' for mt in range(len(cc_reg))]
+    # mi_types = ['cc', 'cc'] ##################################################   REMEMBER ME!!!!     ###############################################################
 
     ### Toy dataset
     # subjects = ['subject_02', 'subject_11']

@@ -1,4 +1,4 @@
-from directories import *
+from causal_VEP.directories import *
 
 import os.path as op
 import numpy as np
@@ -56,7 +56,7 @@ def xr_conv(data, kernel):
     return xr.apply_ufunc(func, data)
 
 
-def z_score(data):
+def z_score(data, twin=None):
     '''
     Perform z-score on the 3rd dimension of an array
     ( y = (x - mean(x)) / std(x) )
@@ -66,12 +66,22 @@ def z_score(data):
     :return: np.ndarray | xr.DataArray
         z-scored data
     '''
-    if isinstance(data, xr.DataArray):
-        data.data = ((data.data - data.data.mean(-1, keepdims=True)) /
-                     data.data.std(-1, keepdims=True))
-    elif isinstance(data, np.ndarray):
-        data = ((data - data.mean(-1, keepdims=True)) /
-                data.std(-1, keepdims=True))
+    isinstance(twin, (tuple, type(None)))
+    if twin is None:
+        if isinstance(data, xr.DataArray):
+            data.data = ((data.data - data.data.mean(-1, keepdims=True)) /
+                         data.data.std(-1, keepdims=True))
+        elif isinstance(data, np.ndarray):
+            data = ((data - data.mean(-1, keepdims=True)) /
+                    data.std(-1, keepdims=True))
+    else:
+        if isinstance(data, xr.DataArray):
+            bln = data.sel({'times': slice(*twin)})
+            data.data = ((data.data - bln.data.mean(-1, keepdims=True)) /
+                         bln.data.std(-1, keepdims=True))
+        else:
+            raise ValueError('If twin is specified, data should be an '
+                             'xarray.DataArray with one dim called \'times\'')
     return data
 
 
