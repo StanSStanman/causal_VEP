@@ -66,7 +66,7 @@ def create_dataset(subjects, sessions, regressor, condition=None, norm=None,
             # Collecting elctrophysiological data
             ephy = xr.load_dataarray(op.join(db_mne, project, sbj,
                                              'vep', 'pow', str(ses),
-                                             '{0}-pow.nc'.format(sbj)))
+                                             '{0}_zs-pow.nc'.format(sbj)))
 
             # Selecting regions of interest
             if rois is not None:
@@ -357,7 +357,7 @@ def model_based_analysis(subjects, sessions, regressors, conditions, mi_types,
         workflow = frites.workflow.WfMi(mi_type=mit, inference=inference,
                                         estimator=est)
         # Fitting
-        gcmi, pvals = workflow.fit(dataset, n_perm=1000, cluster_alpha=0.01,
+        gcmi, pvals = workflow.fit(dataset, n_perm=500, cluster_alpha=0.01,
                                    n_jobs=-1)
         ######################
         # # Defining a frites workflow
@@ -454,6 +454,7 @@ if __name__ == '__main__':
     ss_dict = check_rejected_sessions(subjects, sessions)
 
     norm = 'zscore'
+    # norm = None
 
     crop = (-.4, 1.)
 
@@ -481,8 +482,8 @@ if __name__ == '__main__':
     # cd_reg = ['Team', 'Team_dp']
     # cc_reg = ['Ideal_dp', 'dP_post', 'log_dP_post', 'S', 'BS', 'KL_post']
     #
-    # cd_reg = ['Team_dp']
-    # cc_reg = ['Ideal_dp']
+    cd_reg = ['Team_dp']
+    cc_reg = ['Ideal_dp']
     # cd_reg = []
     # cc_reg = ['Ideal_dp']
 

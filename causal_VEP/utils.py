@@ -120,3 +120,48 @@ def lognorm(data):
         data = np.log(data)
         data -= data.mean(-1, keepdims=True)
     return data
+
+
+def log_zscore(data):
+    '''
+      Compute the base 10 logarithm and the z-score normalization on the 3rd
+      dimension of an array
+      ( y = (x - mean(x)) / mean(x) )
+      :param data: np.ndarray | xr.DataArray
+          Data on which compute the relative change, averages
+          are computed on the 3rd dimension
+      :return: np.ndarray | xr.DataArray
+          relative change of data
+      '''
+    if isinstance(data, xr.DataArray):
+        data.data = np.log10(data)
+        data.data = ((data.data - data.data.mean(-1, keepdims=True)) /
+                     data.data.std(-1, keepdims=True))
+    elif isinstance(data, np.ndarray):
+        data = np.log10(data)
+        data = ((data - data.mean(-1, keepdims=True)) /
+                data.std(-1, keepdims=True))
+    return data
+
+
+def apply_baseline(data, t_win, mode):
+    tmin, tmax = t_win
+    bln = data.sel({'times': slice(tmin, tmax)})
+
+    if mode == 'mean':
+        data.data = data.data - bln.data.mean(-1, keepdims=True)
+    elif mode == 'ratio':
+        data.data = data.data / bln.data.mean(-1, keepdims=True)
+    elif mode == 'relchange':
+        data.data = ((data.data - bln.data.mean(-1, keepdims=True)) /
+                     bln.data.mean(-1, keepdims=True))
+    elif mode == 'logratio':
+        data.data = np.log10(data.data / bln.data.mean(-1, keepdims=True))
+    elif mode == 'zscore':
+        data.data = ((data.data - bln.data.mean(-1, keepdims=True)) /
+                     bln.data.std(-1, keepdims=True))
+    elif mode == 'zlogratio':
+        data.data = (np.log10(data.data / bln.data.mean(-1, keepdims=True)) /
+                     np.log(bln.data).std(-1, keepdims=True))
+
+    return data

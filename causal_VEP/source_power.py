@@ -8,7 +8,8 @@ import xarray as xr
 from joblib import Parallel, delayed
 
 from causal_VEP.config.config import read_db_coords
-from causal_VEP.utils import apply_artifact_rejection
+from causal_VEP.utils import (apply_artifact_rejection, z_score,
+                              relchange, lognorm, log_zscore)
 
 
 def compute_source_power(subject, sbj_dir, epo_fname, fwd_fname, src_fname,
@@ -223,7 +224,7 @@ def _parallelized_dics(it, epochs_event, fwd, tmin, tstep, win_lenghts,
                                                  adaptive=False,
                                                  low_bias=True,
                                                  n_jobs=1,
-                                                 verbose=False)
+                                                 verbose=True)
 
     beamformer = mne.beamformer.make_dics(epochs_event.info, fwd,
                                           avg_csds, reg=0.05,
@@ -320,19 +321,25 @@ def src2atlas(subject, sbj_dir, parc, powers, times, sources,
 
             singleroi_timecourse.append(epo_sources)
         epo_timecourse = np.stack(singleroi_timecourse, -1)
+        epo_timecourse = xr.DataArray(epo_timecourse,
+                                      coords=[range(epo_timecourse.shape[0]),
+                                              range(epo_timecourse.shape[1]),
+                                              times],
+                                      dims=['trials', 'srcs', 'times'])
 
         if mode == 'zscore':
-            epo_timecourse = ((epo_timecourse - epo_timecourse.mean(-1,
-                                                           keepdims=True))
-                           / epo_timecourse.std(-1, keepdims=True))
+            bln = None
+            epo_timecourse = z_score(epo_timecourse, bln)
         elif mode == 'relchange':
-            epo_timecourse = ((epo_timecourse - epo_timecourse.mean(-1,
-                                                           keepdims=True))
-                           / epo_timecourse.mean(-1, keepdims=True))
+            epo_timecourse = relchange(epo_timecourse)
+        elif mode == 'lognorm':
+            epo_timecourse = lognorm(epo_timecourse)
+        elif mode == 'log_zscore':
+            epo_timecourse = log_zscore(epo_timecourse)
         elif mode == 'mean':
             epo_timecourse = epo_timecourse
 
-        epo_timecourse = epo_timecourse.mean(1)
+        epo_timecourse = epo_timecourse.mean('srcs').data
 
         rois_timecourse.append(epo_timecourse)
         print('\t...[done]')
@@ -352,9 +359,10 @@ if __name__ == '__main__':
     epo_dir = op.join(db, 'db_mne/meg_causal/{0}/prep/{1}')
     vep_dir = op.join(db, 'db_mne/meg_causal/{0}/vep')
 
-    # subjects = ['subject_01']
+    # subjects = ['subject_06']
     subjects = [sys.argv[1]]
     sessions = range(1, 16)
+    # sessions = [2]
 
     for sbj in subjects:
         for ses in sessions:
@@ -370,14 +378,23 @@ if __name__ == '__main__':
                                            ses, 'outcome', atlas='aparc.vep',
                                            fmin=88., fmax=92.,
                                            tmin=-.8, tmax=1.5,
-                                           bandwidth=None, win_length=0.2,
-                                           tstep=0.005, norm='zscore',
+                                           bandwidth=60., win_length=0.2,
+                                           tstep=0.005, norm='log_zscore',
                                            return_unlabeled=False,
                                            comp_mode='maison', n_jobs=-1)
+            # src_pow = compute_source_power(sbj, sbj_dir, epo_fname, fwd_fname,
+            #                                src_fname,
+            #                                ses, 'outcome', atlas='aparc.vep',
+            #                                fmin=88., fmax=92.,
+            #                                tmin=-.3, tmax=0.005,
+            #                                bandwidth=None, win_length=0.2,
+            #                                tstep=0.005, norm='log_zscore',
+            #                                return_unlabeled=False,
+            #                                comp_mode='maison', n_jobs=-1)
 
             pow_dir = op.join(vep_dir.format(sbj), 'pow', '{0}'.format(ses))
             if not op.exists(pow_dir):
                 os.makedirs(pow_dir)
-            pow_fname = op.join(pow_dir, '{0}_zs-pow.nc'.format(sbj))
+            pow_fname = op.join(pow_dir, '{0}_lzs60-pow.nc'.format(sbj))
 
             src_pow.to_netcdf(pow_fname)
