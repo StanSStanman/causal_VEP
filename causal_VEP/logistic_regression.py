@@ -208,7 +208,7 @@ def accuracy(y_pred, y):
 
 def kf_logreg(chunk):
     # print(chunk.roi.data, chunk.times.data)
-    from joblib import parallel_backend
+    # from joblib import parallel_backend
     # from threadpoolctl import threadpool_limits
     # with parallel_backend('loky', n_jobs=1): # and threadpool_limits(limits=1, user_api='blas'):
     x = chunk.data.reshape(-1, 1)
@@ -225,6 +225,29 @@ def kf_logreg(chunk):
     #                            )
     cv = StratifiedShuffleSplit(n_splits=10, test_size=0.3)
     cv_score = cross_val_score(logreg, X=x, y=y, cv=cv, n_jobs=1)
+    return cv_score
+
+
+def kf_svc(chunk):
+    from sklearn.svm import SVC
+    # print(chunk.roi.data, chunk.times.data)
+    # from joblib import parallel_backend
+    # from threadpoolctl import threadpool_limits
+    # with parallel_backend('loky', n_jobs=1): # and threadpool_limits(limits=1, user_api='blas'):
+    x = chunk.data.reshape(-1, 1)
+    y = chunk.trials.data
+    svc = SVC(n_jobs=1)
+    # logreg = LogisticRegression(penalty='l2',
+    #                            random_state=42,
+    #                            C=0.2,
+    #                            n_jobs=-1,
+    #                            solver='sag',
+    #                            multi_class='ovr',
+    #                            max_iter=200,
+    #                            verbose=False
+    #                            )
+    cv = StratifiedShuffleSplit(n_splits=10, test_size=0.3)
+    cv_score = cross_val_score(svc, X=x, y=y, cv=cv, n_jobs=1)
     return cv_score
 
 
@@ -411,7 +434,7 @@ if __name__ == '__main__':
         # Move the accuracy function...
         # ...here if jointed sessions
             # ...here if single session
-        accuracies = Parallel(n_jobs=-1, backend='loky', verbose=1)\
+        accuracies = Parallel(n_jobs=15, backend='loky', verbose=1)\
             (delayed(kf_logreg)
                 (dataset.copy().sel({'roi': _rtp[0], 'times': _rtp[1]}))
                 for _rtp in rtp)
@@ -429,7 +452,7 @@ if __name__ == '__main__':
             os.makedirs(dec_dir)
         dec_fname = op.join(dec_dir, '{0}_lcmv-dec.nc'.format(sbj))
 
-            # accuracies.to_netcdf(dec_fname)
+        accuracies.to_netcdf(dec_fname)
 
             # accuracies = xr.load_dataarray(dec_fname)
             # accuracies = xr_conv(accuracies, np.blackman(10))

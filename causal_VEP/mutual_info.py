@@ -69,7 +69,7 @@ def create_dataset(subjects, sessions, regressor, condition=None, norm=None,
             # Collecting elctrophysiological data
             ephy = xr.load_dataarray(op.join(db_mne, project, sbj,
                                              'vep', 'pow', str(ses),
-                                             '{0}_lzs60-pow.nc'.format(sbj)))
+                                             '{0}_lcmv-pow.nc'.format(sbj)))
 
             # Selecting regions of interest
             if rois is not None:
@@ -413,7 +413,7 @@ def model_based_analysis(subjects, sessions, regressors, conditions, mi_types,
         if fname is not False and fname == 'default':
             today = datetime.date.today().strftime('%d%m%Y')
             _f = valid_name('MI_{0}.nc'.format(reg))
-            _fname = op.join(database, 'stats', project, today, _f)
+            _fname = op.join(database, 'stats', project, today+'_lcmv', _f) ############### modified !!!!!!!!!!!!!!!!!!!!!!!!!
         elif fname is not False and isinstance(fname, str):
             _fname = fname
 
@@ -505,7 +505,7 @@ if __name__ == '__main__':
     ss_dict = check_rejected_sessions(subjects, sessions)
 
     norm = 'zscore'
-    norm = None
+    # norm = None
 
     crop = (-.7, 1.2)
 
