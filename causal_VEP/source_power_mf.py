@@ -126,7 +126,7 @@ def get_epochs_dics(epochs_event, fwd, fmin=0, fmax=np.inf,
                                                      adaptive=False,
                                                      low_bias=True,
                                                      n_jobs=n_jobs,
-                                                     verbose=False)
+                                                     verbose=True)
 
         beamformer = mne.beamformer.make_dics(epochs_event.info, fwd,
                                               avg_csds, reg=0.05,
@@ -136,7 +136,7 @@ def get_epochs_dics(epochs_event, fwd, fmin=0, fmax=np.inf,
                                               weight_norm=None,
                                               real_filter=False,
                                               reduce_rank=False,
-                                              verbose=False)
+                                              verbose=True)
 
         epo_power = []
         for e in range(epochs_event.__len__()):
@@ -149,13 +149,13 @@ def get_epochs_dics(epochs_event, fwd, fmin=0, fmax=np.inf,
                                                      adaptive=False,
                                                      low_bias=True,
                                                      n_jobs=n_jobs,
-                                                     verbose=False)
+                                                     verbose=True)
 
             power_time, _ = mne.beamformer.apply_dics_csd(csds,
                                                           beamformer,
-                                                          verbose=False)
+                                                          verbose=True)
 
-            epo_power.append(power_time)
+            epo_power.append(power_time.mean())
 
         power.append(epo_power)
         print('...[done]')
@@ -253,7 +253,7 @@ def _parallelized_dics(it, epochs_event, fwd, tmin, tstep, win_lenghts,
                                                       beamformer,
                                                       verbose=False)
 
-        epo_power.append(power_time)
+        epo_power.append(power_time.mean())
 
     return epo_power, time
 
@@ -376,7 +376,7 @@ if __name__ == '__main__':
             src_pow = compute_source_power(sbj, sbj_dir, epo_fname, fwd_fname,
                                            src_fname,
                                            ses, 'outcome', atlas='aparc.vep',
-                                           fmin=88., fmax=92.,
+                                           fmin=80., fmax=120.,
                                            tmin=-.8, tmax=1.5,
                                            bandwidth=60., win_length=0.2,
                                            tstep=0.005, norm='log_zscore',
@@ -395,6 +395,6 @@ if __name__ == '__main__':
             pow_dir = op.join(vep_dir.format(sbj), 'pow', '{0}'.format(ses))
             if not op.exists(pow_dir):
                 os.makedirs(pow_dir)
-            pow_fname = op.join(pow_dir, '{0}_lzs60-pow.nc'.format(sbj))
+            pow_fname = op.join(pow_dir, '{0}_lzsmf-pow.nc'.format(sbj))
 
             src_pow.to_netcdf(pow_fname)
