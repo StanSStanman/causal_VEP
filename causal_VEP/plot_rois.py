@@ -316,85 +316,85 @@ def order_vep_labels(labels):
 
 
 if __name__ == '__main__':
-    # from utils import z_score, relchange, lognorm, xr_conv, apply_baseline
-    # # subjects = ['subject_02', 'subject_04', 'subject_05',
-    # #             'subject_06', 'subject_07', 'subject_08',
-    # #             'subject_10', 'subject_14',
-    # #             'subject_16', 'subject_17', 'subject_18']
-    # #
-    # subjects = ['subject_01', 'subject_02', 'subject_04', 'subject_05',
-    #             'subject_06', 'subject_07', 'subject_08', 'subject_09',
-    #             'subject_10', 'subject_11', 'subject_13', 'subject_14',
-    #             'subject_15', 'subject_16', 'subject_17', 'subject_18']
-    # subjects = ['subject_01']
+#     from utils import z_score, relchange, lognorm, xr_conv, apply_baseline
+#     # subjects = ['subject_02', 'subject_04', 'subject_05',
+#     #             'subject_06', 'subject_07', 'subject_08',
+#     #             'subject_10', 'subject_14',
+#     #             'subject_16', 'subject_17', 'subject_18']
+#     #
+#     subjects = ['subject_01', 'subject_02', 'subject_04', 'subject_05',
+#                 'subject_06', 'subject_07', 'subject_08', 'subject_09',
+#                 'subject_10', 'subject_11', 'subject_13', 'subject_14',
+#                 'subject_15', 'subject_16', 'subject_17', 'subject_18']
+#     # subjects = ['subject_01']
+# # 
+#     sessions = range(1, 16)
+#     # sessions = [1]
 
-    # sessions = range(1, 16)
-    # # sessions = [1]
+#     fname = '/media/jerry/data_drive/data/db_mne/meg_causal/' \
+#             '{0}/vep/pow/{1}/{0}_lzs60-pow.nc'
 
-    # fname = '/media/jerry/data_drive/data/db_mne/meg_causal/' \
-    #         '{0}/vep/pow/{1}/{0}_lzs60-pow.nc'
+#     datas, n = [], 0
+#     for sbj in subjects:
+#         for ses in sessions:
+#             data = xr.load_dataarray(fname.format(sbj, ses))
+#             data = data.drop_sel({'roi': ['Unknown-lh', 'Unknown-rh']})
+#             data = data.sel({'times': slice(-.7, 1.2)})
+#             data = z_score(data, None)
+#             # data = relchange(data)
+#             #data = apply_baseline(data, (-.6, -.4), 'zlogratio')
+#             data = xr_conv(data, np.blackman(10))
 
-    # datas, n = [], 0
-    # for sbj in subjects:
-    #     for ses in sessions:
-    #         data = xr.load_dataarray(fname.format(sbj, ses))
-    #         data = data.drop_sel({'roi': ['Unknown-lh', 'Unknown-rh']})
-    #         data = data.sel({'times': slice(-.7, 1.2)})
-    #         data = z_score(data, None)
-    #         # data = relchange(data)
-    #         #data = apply_baseline(data, (-.6, -.4), 'zlogratio')
-    #         data = xr_conv(data, np.blackman(10))
+#             ##### Plot single trials #####
+#             for t in data.trials:
+#                 print(t.data)
+#                 plot_vep(data.sel({'trials': t}), pvals=None, threshold=0.05,
+#                          time=None, contrast=0.001,
+#                          cmap='Spectral_r', title='s{0} t{1}'.format(ses, t.data),
+#                          vlines={0.: dict(color='black'),
+#                                  -.3: dict(color='black', linestyle='--')},
+#                          brain=False)
+#             ####################
 
-    #         # ##### Plot single trials #####
-    #         # for t in data.trials:
-    #         #     print(t.data)
-    #         #     plot_vep(data.sel({'trials': t}), pvals=None, threshold=0.05,
-    #         #              time=None, contrast=0.001,
-    #         #              cmap='Spectral_r', title='s{0} t{1}'.format(ses, t.data),
-    #         #              vlines={0.: dict(color='black'),
-    #         #                      -.3: dict(color='black', linestyle='--')},
-    #         #              brain=False)
-    #         # ####################
+#             data = data.mean('trials')
+#             if n == 0:
+#                 datas = data.data
+#             else:
+#                 datas += data.data
+#             n += 1
 
-    #         data = data.mean('trials')
-    #         if n == 0:
-    #             datas = data.data
-    #         else:
-    #             datas += data.data
-    #         n += 1
+#     datas /= n
+#     data.data = datas
 
-    # datas /= n
-    # data.data = datas
+#     ##### PERFORM DIFFERENCE #####
+#     # sessions = range(1, 16)
+#     # sessions = [9]
+#     #
+#     # _datas, n = [], 0
+#     # for sbj in subjects:
+#     #     for ses in sessions:
+#     #         _data = xr.load_dataarray(fname.format(sbj, ses))
+#     #         _data = _data.drop_sel({'roi': ['Unknown-lh', 'Unknown-rh']})
+#     #         _data = z_score(_data)
+#     #         _data = xr_conv(_data, np.blackman(30))
+#     #         _data = _data.mean('trials')
+#     #         if n == 0:
+#     #             _datas = _data.data
+#     #         else:
+#     #             _datas += _data.data
+#     #         n += 1
+#     #
+#     # _datas /= n
+#     # _data.data = _datas
+#     #
+#     # diff = data - _data
+#     ####################
 
-    # ##### PERFORM DIFFERENCE #####
-    # # sessions = range(1, 16)
-    # # sessions = [9]
-    # #
-    # # _datas, n = [], 0
-    # # for sbj in subjects:
-    # #     for ses in sessions:
-    # #         _data = xr.load_dataarray(fname.format(sbj, ses))
-    # #         _data = _data.drop_sel({'roi': ['Unknown-lh', 'Unknown-rh']})
-    # #         _data = z_score(_data)
-    # #         _data = xr_conv(_data, np.blackman(30))
-    # #         _data = _data.mean('trials')
-    # #         if n == 0:
-    # #             _datas = _data.data
-    # #         else:
-    # #             _datas += _data.data
-    # #         n += 1
-    # #
-    # # _datas /= n
-    # # _data.data = _datas
-    # #
-    # # diff = data - _data
-    # ####################
-
-    # plot_vep(data, pvals=None, threshold=.05, time=None, contrast=.02,
-    #          cmap='Spectral_r', title='HGA',
-    #          vlines={0.: dict(color='black'),
-    #                  -.3: dict(color='black', linestyle='--')},
-    #          brain=False)
+#     plot_vep(data, pvals=None, threshold=.05, time=None, contrast=.02,
+#              cmap='Spectral_r', title='HGA',
+#              vlines={0.: dict(color='black'),
+#                      -.3: dict(color='black', linestyle='--')},
+#              brain=False)
 
 
 
@@ -431,13 +431,17 @@ if __name__ == '__main__':
     #           'P(W|P)_post', 'P(W|nP)_post', 'P(W|C)_post', 'dp_meta_post',
     #           'conf_meta_post', 'info_bias_post', 'marg_surp',
     #           'empowerment']
+
+    cd_reg = ['Team', 'Team_dp']
+    cc_reg = ['Ideal_dp', 'dP_post', 'log_dP_post', 'P(W|C)_post', 'S', 'BS', 
+              'KL_post', 'JS_post']
     
     reg = cd_reg + cc_reg
     
     for r in reg:
         _r = valid_name(r)
         fname = '/media/jerry/data_drive/data/stats/meg_causal/' \
-                '17042023_dics_bads_false/MI_{0}.nc'.format(_r)
+                '18042023/MI_{0}.nc'.format(_r)
         # fname = '/media/jerry/data_drive/data/stats/meg_causal/' \
         #         '12042023/subject_18/MI_{0}.nc'.format(_r)
 

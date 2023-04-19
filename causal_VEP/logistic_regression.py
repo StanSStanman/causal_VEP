@@ -229,13 +229,22 @@ def kf_logreg(chunk):
 
 
 def kf_svc(chunk):
+    # Maybe it is better to preprocess data using a scaler as described in:
+    # https://scikit-learn.org/stable/modules/preprocessing.html
+
     from sklearn.svm import SVC
+    from sklearn import preprocessing
     # print(chunk.roi.data, chunk.times.data)
     # from joblib import parallel_backend
     # from threadpoolctl import threadpool_limits
     # with parallel_backend('loky', n_jobs=1): # and threadpool_limits(limits=1, user_api='blas'):
     x = chunk.data.reshape(-1, 1)
     y = chunk.trials.data
+
+    # preprocessing (standard scaler gaussian distribution mean = 0 & std =1)
+    scaler = preprocessing.StandardScaler().fit(x)
+    prep_x = scaler.transform(x)
+
     svc = SVC(n_jobs=1)
     # logreg = LogisticRegression(penalty='l2',
     #                            random_state=42,
@@ -247,7 +256,7 @@ def kf_svc(chunk):
     #                            verbose=False
     #                            )
     cv = StratifiedShuffleSplit(n_splits=10, test_size=0.3)
-    cv_score = cross_val_score(svc, X=x, y=y, cv=cv, n_jobs=1)
+    cv_score = cross_val_score(svc, X=prep_x, y=y, cv=cv, n_jobs=1)
     return cv_score
 
 
@@ -259,7 +268,6 @@ if __name__ == '__main__':
                 'subject_06', 'subject_07', 'subject_08',
                 'subject_10', 'subject_11', 'subject_13',
                 'subject_16', 'subject_17', 'subject_18']
-    # subjects = ['subject_04', 'subject_14']
     sessions = range(1, 16)
 
     # subjects = ['subject_01']
@@ -393,6 +401,7 @@ if __name__ == '__main__':
 
     #         rtp = product(dataset.roi.values, dataset.times.values)
 
+    list_accuracies = []
     # Jointed sessions
     for sbj in subjects:
         dataset = create_dataset([sbj], sessions, regressor, norm=norm,
@@ -434,29 +443,31 @@ if __name__ == '__main__':
         # Move the accuracy function...
         # ...here if jointed sessions
             # ...here if single session
-        accuracies = Parallel(n_jobs=15, backend='loky', verbose=1)\
-            (delayed(kf_logreg)
-                (dataset.copy().sel({'roi': _rtp[0], 'times': _rtp[1]}))
-                for _rtp in rtp)
+        # accuracies = Parallel(n_jobs=15, backend='loky', verbose=1)\
+        #     (delayed(kf_logreg)
+        #         (dataset.copy().sel({'roi': _rtp[0], 'times': _rtp[1]}))
+        #         for _rtp in rtp)
         
-        accuracies = np.stack((accuracies))
-        accuracies = np.reshape(accuracies, (144, 341, 10))
-        accuracies = xr.DataArray(accuracies,
-                                    coords=(dataset.roi,
-                                            dataset.times,
-                                            range(10)),
-                                    dims=['roi', 'times', 'folds'])
+        # accuracies = np.stack((accuracies))
+        # accuracies = np.reshape(accuracies, (144, 341, 10))
+        # accuracies = xr.DataArray(accuracies,
+        #                             coords=(dataset.roi,
+        #                                     dataset.times,
+        #                                     range(10)),
+        #                             dims=['roi', 'times', 'folds'])
 
         dec_dir = op.join(vep_dir.format(sbj), 'dec')
-        if not op.exists(dec_dir):
-            os.makedirs(dec_dir)
+        # if not op.exists(dec_dir):
+        #     os.makedirs(dec_dir)
         dec_fname = op.join(dec_dir, '{0}_lcmv-dec.nc'.format(sbj))
 
-        accuracies.to_netcdf(dec_fname)
+        # accuracies.to_netcdf(dec_fname)
 
-            # accuracies = xr.load_dataarray(dec_fname)
-            # accuracies = xr_conv(accuracies, np.blackman(10))
-            # plot_vep(accuracies.mean('folds'), title=sbj + str(ses),
-            #          contrast=.01, cmap='inferno',
-            #          vlines={0.: dict(color='black'),
-            #                  -.25: dict(color='black', linestyle='--')})
+        accuracies = xr.load_dataarray(dec_fname)
+        # list_accuracies.append(accuracies)
+        # accuracies = xr_conv(accuracies, np.blackman(10))
+    # accuracies = xr.concat(list_accuracies, 'folds')
+        plot_vep(accuracies.mean('folds'), title=sbj,
+                    contrast=.01, cmap='inferno',
+                    vlines={0.: dict(color='black'),
+                            -.25: dict(color='black', linestyle='--')})
