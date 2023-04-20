@@ -441,7 +441,7 @@ if __name__ == '__main__':
     for r in reg:
         _r = valid_name(r)
         fname = '/media/jerry/data_drive/data/stats/meg_causal/' \
-                '18042023/MI_{0}.nc'.format(_r)
+                '18042023_dics/MI_{0}.nc'.format(_r)
         # fname = '/media/jerry/data_drive/data/stats/meg_causal/' \
         #         '12042023/subject_18/MI_{0}.nc'.format(_r)
 
