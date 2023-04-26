@@ -214,7 +214,7 @@ def fsync_visuomotor(subjects, sessions, reg, mi_type, rois=None, norm=None,
         # Number of links
         n_links = len(links)
 
-        del hga_subj, beh_subj, cnd_subj, synergy, x, y
+        # del dataset, synergy, x, y
 
     print("Reformat true and permuted fsync")
     fsync1 = np.array_split(np.stack(fsync), n_links, axis=1)
