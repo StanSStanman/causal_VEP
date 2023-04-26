@@ -16,7 +16,10 @@ from causal_VEP.utils import (reject_hga_trials, xr_conv,
 from causal_VEP.directories import *
 
 import matplotlib
-matplotlib.use('Qt5Agg')
+try:
+    matplotlib.use('Qt5Agg')
+except:
+    pass
 
 vep_pow_dir = op.join(*read_db_coords(), '{0}/vep/pow/{1}')
 
