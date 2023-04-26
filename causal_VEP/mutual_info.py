@@ -542,6 +542,9 @@ if __name__ == '__main__':
     cd_reg = []
     cc_reg = ['JS_post', 'dp_meta_post', 'conf_meta_post', 'info_bias_post', 
               'marg_surp', 'empowerment']
+    
+    cd_reg = []
+    cc_reg = ['info_bias_pre']
 
     # cd_reg = ['Team', 'Team_dp', 'Win']
     # cc_reg = []

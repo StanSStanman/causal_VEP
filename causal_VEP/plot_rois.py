@@ -148,8 +148,8 @@ def plot_vep(data, pvals=None, threshold=.05, time=None, contrast=.05,
 
     # get colorbar limits
     if isinstance(contrast, float):
-        vmin = data.quantile(contrast, skipna=True)
-        vmax = data.quantile(1 - contrast, skipna=True)
+        vmin = data.quantile(contrast, skipna=True).values
+        vmax = data.quantile(1 - contrast, skipna=True).values
     elif isinstance(contrast, (tuple, list)) and (len(contrast) == 2):
         vmin, vmax = contrast
     else:
@@ -204,7 +204,7 @@ def plot_vep(data, pvals=None, threshold=.05, time=None, contrast=.05,
 
         if mode == 'single':
             ss.heatmap(_data.to_pandas(), yticklabels=True, xticklabels=False,
-                       vmin=vmin.values, vmax=vmax.values, cmap=cmap, ax=lh,
+                       vmin=vmin, vmax=vmax, cmap=cmap, ax=lh,
                        zorder=0)
 
             for k, kw in vlines.items():
@@ -220,7 +220,7 @@ def plot_vep(data, pvals=None, threshold=.05, time=None, contrast=.05,
 
         elif mode == 'double' or mode == 'bordel':
             ss.heatmap(_data.to_pandas(), yticklabels=True, xticklabels=False,
-                       vmin=vmin.values, vmax=vmax.values, cmap=cmap, ax=lh,
+                       vmin=vmin, vmax=vmax, cmap=cmap, ax=lh,
                        cbar=False, zorder=0)
 
             for k, kw in vlines.items():
@@ -241,7 +241,7 @@ def plot_vep(data, pvals=None, threshold=.05, time=None, contrast=.05,
             _data = _data.sel({'roi': ordered_labels['label']})
 
             ss.heatmap(_data.to_pandas(), yticklabels=True, xticklabels=False,
-                       vmin=vmin.values, vmax=vmax.values, cmap=cmap, ax=rh,
+                       vmin=vmin, vmax=vmax, cmap=cmap, ax=rh,
                        cbar=False, zorder=0)
 
             for k, kw in vlines.items():
@@ -416,9 +416,9 @@ if __name__ == '__main__':
     # cd_reg = ['Team_dp']
     # cc_reg = ['Ideal_dp', 'dP_post', 'BS']
     
-    # cd_reg = []
-    # cc_reg = ['S', 'conf_meta_post', 'info_bias_post', 'marg_surp',
-    #           'empowerment']
+    cd_reg = []
+    cc_reg = ['S', 'conf_meta_post', 'info_bias_post', 'marg_surp',
+              'empowerment']
     
     # cd_reg = ['Play', 'Win']
     cc_reg = []
@@ -435,6 +435,12 @@ if __name__ == '__main__':
     cd_reg = ['Team', 'Team_dp']
     cc_reg = ['Ideal_dp', 'dP_post', 'log_dP_post', 'P(W|C)_post', 'S', 'BS', 
               'KL_post', 'JS_post']
+    
+    cd_reg = []
+    cc_reg = ['JS_post', 'dp_meta_post', 'conf_meta_post', 'info_bias_post', 
+              'marg_surp', 'empowerment']
+    cd_reg = []
+    cc_reg = ['info_bias_post']
     
     reg = cd_reg + cc_reg
     
@@ -458,7 +464,8 @@ if __name__ == '__main__':
                  brain=False)
         # im.savefig('/media/jerry/data_drive/data/manu/{0}_MI.png'.format(_r))
     
-        plot_vep(pvals, pvals=None, threshold=.05, time=None, contrast=None,
+        plot_vep(pvals, pvals=None, threshold=.05, time=None, 
+                 contrast=(0., 1.),
                  cmap='gist_stern', title=_r,
                  vlines={0.: dict(color='black'),
                          -.25: dict(color='black', linestyle='--')},
