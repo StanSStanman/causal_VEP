@@ -4,7 +4,7 @@ import os
 import os.path as op
 # from bv2mne.directories import read_directories, read_databases
 from frites.workflow import WfStats
-from xfrites.conn import conn_pid
+from xfrites.conn import conn_pid, conn_ii
 import numpy as np
 # import pandas as pd
 from brainets.behavior.beh_te import load_beh
@@ -43,8 +43,11 @@ database, project = read_db_coords()
 
 def conn_fsync(x, y, roi=None, times=None, mi_type='cc', gcrn=True, dt=1,
                verbose=None):
-    syn = conn_pid(x, y, roi=roi, times=times, mi_type=mi_type, gcrn=gcrn, dt=dt,
-                   verbose=verbose)[-2]
+    # syn = conn_pid(x, y, roi=roi, times=times, mi_type=mi_type, gcrn=gcrn, dt=dt,
+    #                verbose=verbose)[-2]
+    # Trying interaction information
+    syn = conn_ii(x, y, roi=roi, times=times, mi_type=mi_type, gcrn=gcrn, dt=dt,
+                  verbose=verbose)[-1]
     return syn.data
 
 
@@ -95,6 +98,8 @@ def fsync_visuomotor(subjects, sessions, reg, mi_type, rois=None, norm=None,
     fsync = []
     fsync_p = []
     for i, sbj in enumerate(subjects):
+
+        print('Computing subject {0}'.format(sbj))
 
         # # Init
         # hga_subj = []
@@ -183,8 +188,10 @@ def fsync_visuomotor(subjects, sessions, reg, mi_type, rois=None, norm=None,
 
         # True FSynC
         print("Compute FSynC ")
-        # It seems to me that the [-2] result of conn_pid is actually redudancy ## TODO: ask
-        synergy = conn_pid(x, y, **kw_conn)[-2]
+        # # It seems to me that the [-2] result of conn_pid is actually redudancy ## TODO: ask
+        # synergy = conn_pid(x, y, **kw_conn)[-2]
+        # Using conn_ii [-1] we will take the interaction information (syn - red)
+        synergy = conn_ii(x, y, **kw_conn)[-1]
 
         # Remove baseline
         # synergy.data -= synergy.sel(times=slice(-0.4, -0.1)).mean('times', keepdims=True).data
@@ -295,6 +302,6 @@ if __name__ == '__main__':
     # GCMI analysises
     for reg, mit, in zip(regressors, mi_types):
         fsync_visuomotor(subjects, sessions, reg, mit, rois=rois, 
-                            norm=norm, crop=crop, smoothing=smooth, 
-                            pow_bads=True, inference='rfx', mcp='maxstat', 
-                            n_perm=1000, fname='default', n_jobs=-1)
+                        norm=norm, crop=crop, smoothing=smooth, 
+                        pow_bads=True, inference='rfx', mcp='maxstat', 
+                        n_perm=10, fname='default', n_jobs=-1)

@@ -132,3 +132,4 @@ dmypy.json
 
 # Other
 causal_VEP/config/db_coords.json
+notebooks/*
